@@ -1,0 +1,98 @@
+service: indra-interview
+useDotenv: true
+frameworkVersion: '3'
+
+plugins:
+  - serverless-offline
+  
+custom:
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: ${self:custom.stage}
+  region: ${self:custom.region}
+  profile: ${env:AWS_PROFILE_NAME}
+  environment: ${self:custom}
+
+package:
+  patterns:
+    - "!package-lock.json"
+    - "!package.json"
+
+resources:
+  Resources:
+    StoresIntegrationDB:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${env:FAN_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+functions:
+  createFan:
+    handler: dist/functions/createFan.handler
+    events:
+      - http:
+          path: api/fans
+          method: post
+          integration: lambda
+          cors: true
+          request:
+            schemas:
+              application/json: ${file(create_fan.json)}
+
+    environment:
+      FAN_TABLE_NAME: ${env:FAN_TABLE_NAME}
+  
+  getFans:
+    handler: dist/functions/getFans.handler
+    events:
+      - http:
+          path: api/fans
+          method: get
+          integration: lambda
+          cors: true
+
+    environment:
+      FAN_TABLE_NAME: ${env:FAN_TABLE_NAME}
+
+  getPlanets:
+    handler: dist/functions/getPlanets.handler
+    events:
+      - http:
+          path: api/swapi/planets
+          method: get
+          integration: lambda
+          cors: true
+    environment:
+      SWAPI_HOST: ${env:SWAPI_HOST}
+  
+  getPlanet:
+    handler: dist/functions/getPlanet.handler
+    events:
+      - http:
+          path: api/swapi/planets/{id}
+          method: get
+          integration: lambda
+          cors: true
+          request:
+            parameters:
+              paths:
+                id: true
+    environment:
+      SWAPI_HOST: ${env:SWAPI_HOST}

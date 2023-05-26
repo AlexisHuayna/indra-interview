@@ -1,0 +1,22 @@
+{
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "title": "Fan Schema",
+    "required": [
+        "name",
+        "email",
+        "age"
+    ],
+    "properties": {
+      "username": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string"
+      },
+      "age": {
+        "type": "number"
+      }
+    }
+  }
